@@ -1,0 +1,13 @@
+Break the response below into atomic factual claims.
+
+- Each claim is one short, self-contained statement (replace pronouns with the names they refer to).
+- Together, the claims must cover every factual statement in the response.
+- Copy the meaning faithfully: do not add, correct or judge anything.
+- Skip statements that only say information is unavailable, and skip greetings or remarks about the task.
+
+<response>
+$answer
+</response>
+
+Reply with JSON only, in exactly this format:
+{"claims": ["<claim 1>", "<claim 2>"]}

@@ -1,0 +1,21 @@
+Decide whether an AI-generated response is faithful to its source material.
+
+- SUPPORTED: every factual claim in the response is stated in, or directly inferable from, the source material.
+- UNSUPPORTED: at least one claim contradicts the source material, or adds information that cannot be verified from it (for example an added detail, a wrong number, name or date, or an inference presented as fact).
+
+Judge only faithfulness to the source. Ignore writing quality and completeness, and do not use your own world knowledge.
+
+<source>
+$context
+</source>
+
+<task_given_to_the_ai>
+$question
+</task_given_to_the_ai>
+
+<response>
+$answer
+</response>
+
+Reply with JSON only, in exactly this format:
+{"reasoning": "<1-2 sentences with the key evidence>", "label": "<SUPPORTED or UNSUPPORTED>", "confidence": <integer 0-100: how likely your label is correct>}

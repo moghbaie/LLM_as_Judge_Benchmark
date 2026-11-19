@@ -3,8 +3,12 @@
 One entry per judge. Rules:
 - `model_id` is the exact, versioned backend ID. Never use OpenRouter `~...-latest` aliases:
   they can switch to a newer model mid-run.
-- Prices are USD per 1M tokens as listed on OpenRouter on `PRICES_CHECKED`; re-check on run day
-  and record the provider actually used in every results row (Step 4).
+- Every API model is pinned to ONE OpenRouter endpoint (`provider`, an endpoint tag) with no
+  fallbacks, so quantization cannot change mid-run. Rule: the model maker's own endpoint if it
+  exists, otherwise a native-precision (fp8) endpoint, never the cheapest fp4 one.
+- Prices are USD per 1M tokens for the PINNED endpoint on `PRICES_CHECKED` (often higher than the
+  headline OpenRouter price, which is the cheapest endpoint). `runners.openrouter.check_pin()`
+  re-checks them on run day.
 - `open_weights` is True only when downloadable weights exist (`hf_id` set). Closed models are
   never counted as "open" in the analysis.
 """
@@ -38,6 +42,8 @@ class ModelSpec:
     price_in: float | None = None          # USD per 1M input tokens (API backends)
     price_out: float | None = None         # USD per 1M output tokens
     license: str | None = None
+    provider: str | None = None            # pinned OpenRouter endpoint tag; prices above are THIS endpoint's
+    quantization: str | None = None        # as reported by the pinned endpoint
     enabled: bool = True          # False = registered but not in the core run
     notes: str = ""
 
@@ -55,18 +61,23 @@ MODELS: list[ModelSpec] = [
     # ---------------------------------------------------------------- large open (OpenRouter)
     ModelSpec("kimi-k3.1-pro", "Kimi K3.1 Pro", "large_open", "openrouter",
               "moonshotai/kimi-k3.1-pro", "moonshotai/Kimi-K3.1-Pro",
-              params_total_b=2780, price_in=0.25, price_out=8.80, license="other",
+              params_total_b=2780, price_in=2.00, price_out=10.00, license="other",
+              provider="moonshotai/mxfp4", quantization="mxfp4",
               notes="High output price: cost is dominated by reasoning/output length."),
     ModelSpec("deepseek-v4.1-flash", "DeepSeek V4.1 Flash", "large_open", "openrouter",
               "deepseek/deepseek-v4.1-flash", "deepseek-ai/DeepSeek-V4.1-Flash",
-              params_total_b=763, price_in=0.30, price_out=1.20, license="MIT"),
+              params_total_b=763, price_in=0.14, price_out=0.42, license="MIT",
+              provider="deepinfra/fp8", quantization="fp8",
+              notes="No first-party DeepSeek endpoint on OpenRouter; fp8 is the native release precision."),
     ModelSpec("glm-5.3", "GLM-5.3", "large_open", "openrouter",
               "z-ai/glm-5.3", "zai-org/GLM-5.3",
-              params_total_b=753, price_in=0.07, price_out=1.40, license="other"),
+              params_total_b=753, price_in=1.40, price_out=4.40, license="other",
+              provider="z-ai/fp8", quantization="fp8"),
     ModelSpec("muse-spark-open", "Muse Spark Open", "large_open", "openrouter",
               "meta/muse-spark-open", "meta-models/Muse-Spark-Open-816B-A42B",
               params_total_b=816, params_active_b=42, price_in=1.25, price_out=4.25, license="other",
-              notes="HF weights are gated; few providers serve it, so pin the provider on run day."),
+              provider="together", quantization="unknown",
+              notes="HF weights are gated; only 5 endpoints, all at the same price."),
     ModelSpec("qwen3.8-2.4t", "Qwen3.8 2.4T-A95B", "large_open", "openrouter",
               "qwen/qwen3.8-2.4t-a95b", "Qwen/Qwen3.8-2.4T-A95B",
               params_total_b=2400, params_active_b=95, price_in=2.00, price_out=6.00, license="other",
@@ -76,6 +87,7 @@ MODELS: list[ModelSpec] = [
     ModelSpec("qwen3.8-max", "Qwen3.8 Max", "closed_reference", "openrouter",
               "qwen/qwen3.8-max-0902", None,
               price_in=2.00, price_out=6.00, license="proprietary",
+              provider="alibaba", quantization="unknown",
               notes="Closed weights (API only). Never counted as open in charts."),
     # Small/mid open, frontier and specialist judges are added in Steps 4-5, when their
     # exact IDs are pinned.

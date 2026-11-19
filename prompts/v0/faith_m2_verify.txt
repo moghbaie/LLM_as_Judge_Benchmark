@@ -1,0 +1,16 @@
+Check each numbered claim against the source material.
+
+- A claim is supported only if it is stated in, or directly inferable from, the source material.
+- A claim is not supported if it contradicts the source or adds information that cannot be verified from it.
+- Do not use your own world knowledge.
+
+<source>
+$context
+</source>
+
+<claims>
+$claims
+</claims>
+
+Reply with JSON only, with one verdict per claim, in exactly this format:
+{"verdicts": [{"claim": 1, "supported": <true or false>, "note": "<short evidence>"}], "confidence": <integer 0-100: how likely it is that all your verdicts are correct>}

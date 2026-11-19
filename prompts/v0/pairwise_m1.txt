@@ -1,0 +1,18 @@
+Two AI assistants answered the same question. Decide which response is correct. If neither is fully correct, pick the one that is closer to correct.
+
+Judge correctness of the final answer and of the reasoning that supports it. Ignore length, style and how confident each response sounds. The order in which the responses are shown is random and means nothing.
+
+<question>
+$question
+</question>
+
+<response_a>
+$answer
+</response_a>
+
+<response_b>
+$answer_b
+</response_b>
+
+Reply with JSON only, in exactly this format:
+{"reasoning": "<1-3 sentences explaining the decisive difference>", "label": "<A or B>", "confidence": <integer 0-100: how likely your label is correct>}
