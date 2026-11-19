@@ -27,32 +27,67 @@ Checked against the real data on 2026-11-19:
 
 ## Judge models
 
-The registry lives in `src/ljbench/models.py` and is tested in `tests/test_models.py`. Each entry pins an exact, versioned backend ID (never a `~…-latest` alias) and its open-weights repo. Prices are from OpenRouter, checked 2026-11-19; re-check them on run day.
+**21 models: 15 core + 6 optional.** All are pinned in `src/ljbench/models.py`; `tests/test_models.py` locks the roster.
 
-| Tier | Model | Backend ID | Pinned endpoint (quant.) | Total params | $/1M in / out | Status |
-| --- | --- | --- | --- | --- | --- | --- |
-| Large open | Kimi K3.1 Pro | `moonshotai/kimi-k3.1-pro` | `moonshotai/mxfp4` (first-party) | 2.78T | 2.00 / 10.00 | core |
-| Large open | DeepSeek V4.1 Flash | `deepseek/deepseek-v4.1-flash` | `deepinfra/fp8` (native fp8; no first-party endpoint) | 763B | 0.14 / 0.42 | core |
-| Large open | GLM-5.3 | `z-ai/glm-5.3` | `z-ai/fp8` (first-party) | 753B | 1.40 / 4.40 | core |
-| Large open | Muse Spark Open | `meta/muse-spark-open` | `together` | 816B (42B active) | 1.25 / 4.25 | core; HF weights gated |
-| Closed reference | Qwen3.8 Max | `qwen/qwen3.8-max-0902` | `alibaba` (only provider) | n/a (closed) | 2.00 / 6.00 | core; **never counted as open** |
-| Large open | Qwen3.8 2.4T-A95B | `qwen/qwen3.8-2.4t-a95b` | to pin if enabled | 2.4T (95B active) | 2.00 / 6.00 | optional (disabled): open Qwen flagship for a Qwen size curve |
-| Small / mid open, frontier, specialists | to be pinned in Step 5 | | | | | |
+- API models are pinned to one OpenRouter endpoint with no fallbacks.
+- Colab models are pinned to a Hugging Face commit.
+- Prices and endpoints were checked live on 2026-11-19 (`python -m ljbench.run_api check`).
 
-**Why pin endpoints:** each model is served by 5–50 OpenRouter endpoints at fp4, fp8 or bf16, and the headline price is the cheapest (usually fp4) one. Free routing would mix quantizations within one model's results. Rule: the model maker's own endpoint, else native precision, never the cheapest fp4. `python -m ljbench.run_api check` re-verifies that pins are live and prices unchanged on run day.
+| # | Model | Total size | Active / token | Tier | Runs on | Pin (endpoint or HF commit) | $/1M in / out | Status |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | HHEM-2.1-open | 0.11B | — | Specialist (Task A) | Colab | `de9a5e6` | GPU | core |
+| 2 | Qwen3.5-4B | 4.7B | — | Small open | Colab vLLM | `851bf6e` | GPU | core |
+| 3 | Bespoke-MiniCheck-7B | 7.7B | — | Specialist (Task A) | Colab | `1ed7786` | GPU | core |
+| 4 | Gemma 4 E4B-it | 8.0B | ~4B effective | Small open | Colab vLLM | `4ecc2ba` | GPU | core |
+| 5 | gpt-oss-20b | 20.9B | 3.6B | Mid open | Colab vLLM (native MXFP4) | `6cee5e8` | GPU | core |
+| 6 | Qwen3.8-27B | 27.8B | — | Mid open | Colab vLLM (official FP8) | `c3a462c` | GPU | core |
+| 7 | Muse Glimmer 30B | 29.8B | — | Mid open | OpenRouter | `deepinfra/bf16` | 0.30 / 1.20 | optional |
+| 8 | Gemma 4 31B-it | 31.3B | — | Mid open | OpenRouter | `novita/bf16` | 0.14 / 0.40 | optional |
+| 9 | GLM-5.3 | 753B | n/p | Large open | OpenRouter | `z-ai/fp8` | 1.40 / 4.40 | core |
+| 10 | DeepSeek V4.1 Flash | 763B | n/p | Large open | OpenRouter | `deepinfra/fp8` | 0.14 / 0.42 | core |
+| 11 | Muse Spark Open | 816B | 42B | Large open | OpenRouter | `together` | 1.25 / 4.25 | core |
+| 12 | Qwen3.8 2.4T-A95B | 2.4T | 95B | Large open | OpenRouter | `alibaba` | 2.00 / 6.00 | optional |
+| 13 | Kimi K3.1 Pro | 2.78T | n/p | Large open | OpenRouter | `moonshotai/mxfp4` | 2.00 / 10.00 | core |
+| 14 | Qwen3.8 Max | undisclosed | — | Closed reference | OpenRouter | `alibaba` | 2.00 / 6.00 | core |
+| 15 | Claude Opus 5.5 | undisclosed | — | Frontier flagship | OpenRouter | `anthropic` | 4.00 / 20.00 | core |
+| 16 | Claude Haiku 5.5 | undisclosed | — | Frontier cheap | OpenRouter | `anthropic` | 0.10 / 0.50 | core |
+| 17 | GPT-6 Luna | undisclosed | — | Frontier cheap | OpenRouter | `openai` | 0.10 / 0.50 | core |
+| 18 | Gemini 3.8 Flash | undisclosed | — | Frontier cheap | OpenRouter | `google-ai-studio` | 0.75 / 3.75 | core |
+| 19 | Claude Fable 5.2 | undisclosed | — | Frontier flagship | OpenRouter | `anthropic` | 8.00 / 40.00 | optional |
+| 20 | GPT-6.2 Astra | undisclosed | — | Frontier flagship | OpenRouter | `openai` | 8.00 / 40.00 | optional |
+| 21 | Gemini 4 Argon | undisclosed | — | Frontier flagship | OpenRouter | `google-ai-studio` | 2.00 / 10.00 | optional |
 
-Estimated cost of the core run per model at the **pinned** prices (3,750 calls, 3.9M input tokens: 850 Task A items × 3 calls + 600 Task B pairs × 2 orders, real template sizes):
+n/p = not published. Only open models can go on the size curve; closed models appear on the cost/accuracy chart only.
 
-| Model | Short output (300 tok) | Reasoning output (1,500 tok) |
+**Size curves:**
+- **Qwen:** 3.5-4B → 3.8-27B → 3.8 2.4T (open, optional) → 3.8 Max (closed). The 4B model is one generation older.
+- **Gemma 4:** E4B → 31B (optional). Same generation, so this is the cleanest curve.
+- **Meta Muse:** Glimmer 30B (optional) → Spark Open 816B.
+
+**Pinning rules:**
+- **Endpoints.** Each API model has 3–50 OpenRouter endpoints at fp4, fp8 or bf16. The headline price is the cheapest (usually fp4). We pin the model maker's own endpoint, else native or full precision, and never fall back to another endpoint.
+- **The two optional ~30B models run via the API in bf16.** That's fairer than 4-bit on a 40GB Colab GPU.
+- **Temperature.** The Anthropic and OpenAI endpoints reject `temperature`, so those models run at their default sampling. The response cache makes our result files reproducible, and this is listed as a limitation. Every other model runs at temperature 0. For Gemini we pin AI Studio, which accepts temperature, unlike Vertex.
+- **Tier names checked against OpenRouter's model descriptions.** GPT-6.2 Astra is OpenAI's flagship, and GPT-6 Luna is its cost-efficient tier. **Gemini 4 Argon is Google's flagship.** Gemini 4 Neon is a mid-priced model.
+- **Licenses:** MiniCheck is CC BY-NC 4.0, and the Kimi, GLM, Muse Spark and Qwen 2.4T/Max licenses are "other". Fine for a non-commercial benchmark; check them before redistributing outputs.
+
+**API cost of the full run** (850 Task A items × 3 calls + 600 Task B pairs × 2 orders = 3,750 calls and 3.9M input tokens per model; specialists do Task A only):
+
+| Model | Short output (300 tok/call) | Reasoning output (1,500 tok/call) |
 | --- | --- | --- |
+| Claude Opus 5.5 | $38 | $128 |
 | Kimi K3.1 Pro | $19 | $64 |
-| DeepSeek V4.1 Flash | $1 | $3 |
+| Qwen3.8 Max | $15 | $42 |
 | GLM-5.3 | $10 | $30 |
 | Muse Spark Open | $10 | $29 |
-| Qwen3.8 Max | $15 | $42 |
-| **These 5 together** | **≈ $55** | **≈ $168** |
+| Gemini 3.8 Flash | $7 | $24 |
+| DeepSeek V4.1 Flash, Claude Haiku 5.5, GPT-6 Luna | $1 each | $3 each |
+| **Core API total (9 models)** | **≈ $102** | **≈ $326** |
+| Optional API models (6) | ≈ $190 | ≈ $629 |
 
-Output length dominates the cost, so the Step 6 pilot measures real output tokens per model and decides whether reasoning or thinking mode stays on. The same mode must be used for every item of a model. Five large judges is more than the original plan's single large-open slot. They're all API calls, so they cost money but no Colab time.
+- The 6 core Colab models cost GPU compute units only.
+- Two ways to cut API cost later: OpenRouter `:batch` variants (half price, asynchronous; the runner would need batch support) and OpenAI's `flex` endpoint (half price).
+- The Step 6 pilot measures real output length per model, which decides where between these bounds the run lands.
 
 ## Repo layout
 
@@ -120,17 +155,18 @@ Unified item schema (one JSON object per line):
 - **Show:** 5 real calls on the dev set with a `:free` model.
 
 ### Step 5 — Colab GPU runner + specialist baselines (A100)
-- vLLM offline `LLM.generate` with guided JSON. Log GPU, quantization, vLLM version and throughput.
+- Colab models: Qwen3.5-4B, Gemma 4 E4B, gpt-oss-20b, Qwen3.8-27B (FP8), HHEM-2.1-open and MiniCheck-7B, each loaded at its pinned HF commit.
+- vLLM offline `LLM.generate` with guided JSON, using the same prompts, parser and result schema as the API runner. Log GPU, quantization, vLLM version and throughput.
 - MiniCheck-7B and HHEM-2.1-open wrappers that output the same result schema (score → label at 0.5; the score doubles as confidence).
 - **Tests:** a smoke run on 20 pilot items per model; result-file schema checks.
 
 ### Step 6 — Pilot and prompt freeze
-- 50 RAGTruth-train items + 20 JudgeBench-dev items × 3 models (small open, large open, frontier).
+- 50 RAGTruth-train items + 20 JudgeBench-dev items × at least 4 models (Qwen3.5-4B, DeepSeek V4.1 Flash, Claude Haiku 5.5, Claude Opus 5.5). Every core API model also gets the 20-item dev smoke test to measure output length and cost.
 - Read 20 outputs by hand, fix prompts or parsing, then freeze (`git tag v1`).
 - **Gate:** frontier parse failures < 5%, plus a cost estimate for the full run (tokens × price table).
 
 ### Step 7 — Full runs
-- About 6 judges × {M1, M2} × (600 + 250) faithfulness items, plus 600 JudgeBench items × 2 orders. Add MiniCheck and HHEM.
+- 13 core LLM judges × {M1, M2} × (600 + 250) faithfulness items, plus 600 JudgeBench items × 2 orders. MiniCheck and HHEM run Task A only. Optional models follow if time and budget allow.
 - **Gate:** a completeness check shows every model × method × dataset cell has all IDs.
 
 ### Step 8 — Analysis

@@ -47,8 +47,15 @@ class Judge:
         self.n_cached = 0
         self._anchors = None
 
+    def params(self) -> dict:
+        """Parameters actually sent: no temperature for endpoints that reject it."""
+        p = self.cfg.params()
+        if not self.spec.temperature_supported:
+            p["temperature"] = None
+        return p
+
     async def call(self, messages: list[dict]) -> Completion:
-        params = self.cfg.params()
+        params = self.params()
         key = cache_key(self.spec.model_id, self.spec.provider, messages, params)
         if self.cache is not None and (hit := self.cache.get(key)) is not None:
             self.n_cached += 1
@@ -67,6 +74,8 @@ class Judge:
     # ------------------------------------------------------------------ one item
     async def judge(self, item: dict, method: str, order: str = "orig") -> dict:
         task = item["task"]
+        if task not in self.spec.tasks:
+            raise ValueError(f"{self.spec.key} does not do task {task}")
         if method not in prompts.METHODS[task]:
             raise ValueError(f"method {method} not defined for task {task}")
         it = prompts.swap_pair(item) if order == "swap" else item
@@ -109,7 +118,7 @@ class Judge:
             "provider_used": calls[-1].provider,
             "method": method,
             "prompt_version": v,
-            "params": self.cfg.params(),
+            "params": self.params(),
             "gold": it["human_label"],
             "label": parsed.label,
             "correct": parsed.label == it["human_label"],
@@ -134,6 +143,9 @@ class Judge:
 async def run(judge: Judge, items: list[dict], dataset: str, method: str, store: ResultStore, *,
               limit: int | None = None, progress_every: int = 25, log=print) -> dict:
     """Judge every (item, order) not already in `store`. Pairwise items run in both orders."""
+    bad = {it["task"] for it in items} - set(judge.spec.tasks)
+    if bad:
+        raise ValueError(f"{judge.spec.key} cannot judge task(s) {bad}")
     units = [(it, o) for it in items[:limit] for o in (("orig", "swap") if it["task"] == "pairwise" else ("orig",))]
     done = store.done
     todo = [(it, o) for it, o in units if (it["id"] if o == "orig" else f"{it['id']}::swap") not in done]

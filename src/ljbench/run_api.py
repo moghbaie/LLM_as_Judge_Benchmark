@@ -82,9 +82,11 @@ def main(argv=None):
     a = ap.parse_args(argv)
 
     if a.cmd == "check":
-        for spec in models.enabled():
+        for spec in models.MODELS:   # core and optional
             if spec.backend == "openrouter":
-                print(check_pin(spec))
+                r = check_pin(spec)
+                print(f"{'core' if spec.enabled else 'opt ':4s} {spec.key:22s} {spec.provider:18s} "
+                      f"ok={r['ok']}  {r.get('problem') or ''}")
         async def key():
             async with OpenRouterClient() as c:
                 return await c.key_info()

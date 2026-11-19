@@ -58,15 +58,16 @@ def get_api_key() -> str:
     return key
 
 
-def build_body(model_id: str, messages: list[dict], *, provider: str | None, temperature: float,
+def build_body(model_id: str, messages: list[dict], *, provider: str | None, temperature: float | None,
                max_tokens: int, json_mode: bool, reasoning: dict | None, seed: int | None) -> dict:
     body = {
         "model": model_id,
         "messages": messages,
-        "temperature": temperature,
         "max_tokens": max_tokens,
         "usage": {"include": True},
     }
+    if temperature is not None:   # None = endpoint rejects temperature (e.g. Anthropic, OpenAI)
+        body["temperature"] = temperature
     if json_mode:
         body["response_format"] = {"type": "json_object"}
     if provider:
@@ -108,7 +109,7 @@ class OpenRouterClient:
         return min(self.max_delay, self.base_delay * 2 ** attempt) * (0.5 + random.random() / 2)
 
     async def complete(self, model_id: str, messages: list[dict], *, provider: str | None = None,
-                       temperature: float = 0.0, max_tokens: int = 4096, json_mode: bool = True,
+                       temperature: float | None = 0.0, max_tokens: int = 4096, json_mode: bool = True,
                        reasoning: dict | None = None, seed: int | None = None) -> Completion:
         body = build_body(model_id, messages, provider=provider, temperature=temperature,
                           max_tokens=max_tokens, json_mode=json_mode, reasoning=reasoning, seed=seed)
@@ -193,8 +194,11 @@ def check_pin(spec, transport: httpx.BaseTransport | None = None, tolerance: flo
     if abs(pin - spec.price_in) > tolerance or abs(pout - spec.price_out) > tolerance:
         problems.append(f"price changed: now {pin:.2f}/{pout:.2f}, registry {spec.price_in}/{spec.price_out}")
     sp = match.get("supported_parameters", [])
-    for p in ("response_format", "temperature"):
+    needed = ["response_format"] + (["temperature"] if spec.temperature_supported else [])
+    for p in needed:
         if p not in sp:
             problems.append(f"endpoint does not support {p}")
+    if not spec.temperature_supported and "temperature" in sp:
+        problems.append("endpoint now accepts temperature: set temperature_supported=True")
     return {"model": spec.key, "ok": not problems, "problem": "; ".join(problems) or None,
             "quantization": match.get("quantization"), "price_in": pin, "price_out": pout}

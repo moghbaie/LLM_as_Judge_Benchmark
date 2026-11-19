@@ -241,3 +241,48 @@ def test_fatal_error_stops_run(tmp_path):
 def test_unknown_method_rejected(tmp_path):
     with pytest.raises(ValueError):
         asyncio.run(Judge(FakeClient(), SPEC).judge(pair_items()[0], "m2"))
+
+
+# ============================================================================ roster-specific behaviour
+class RecordingClient(FakeClient):
+    def __init__(self):
+        super().__init__()
+        self.params = []
+
+    async def complete(self, model_id, messages, **params):
+        self.params.append(params)
+        return await super().complete(model_id, messages, **params)
+
+
+def test_no_temperature_sent_to_endpoints_that_reject_it(tmp_path):
+    spec = models.get("claude-haiku-5.5")
+    assert not spec.temperature_supported
+    rc = RecordingClient()
+    store = ResultStore(tmp_path, "ds", spec.key, "m1")
+    go(Judge(rc, spec), faith_items(2), store)
+    assert all(p["temperature"] is None for p in rc.params)
+    assert store.rows()[0]["params"]["temperature"] is None          # recorded as actually sent
+    b = build_body("m", MSGS, provider="anthropic", temperature=None, max_tokens=10, json_mode=True,
+                   reasoning=None, seed=None)
+    assert "temperature" not in b
+
+
+def test_temperature_zero_sent_where_supported(tmp_path):
+    rc = RecordingClient()
+    go(Judge(rc, SPEC), faith_items(2), ResultStore(tmp_path, "ds", SPEC.key, "m1"))
+    assert all(p["temperature"] == 0.0 for p in rc.params)
+
+
+def test_specialists_refuse_pairwise(tmp_path):
+    spec = models.get("hhem-2.1-open")
+    with pytest.raises(ValueError, match="cannot judge"):
+        go(Judge(FakeClient(), spec), pair_items(), ResultStore(tmp_path, "ds", spec.key, "m1"))
+
+
+def test_check_pin_without_temperature():
+    spec = models.get("claude-opus-5.5")
+    ep = {"data": {"endpoints": [{"tag": "anthropic", "quantization": None,
+                                  "pricing": {"prompt": "0.000004", "completion": "0.00002"},
+                                  "supported_parameters": ["response_format", "reasoning"]}]}}
+    t = httpx.MockTransport(lambda r: httpx.Response(200, json=ep))
+    assert check_pin(spec, transport=t)["ok"]
