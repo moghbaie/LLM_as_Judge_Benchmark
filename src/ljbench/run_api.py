@@ -91,7 +91,7 @@ def main(argv=None):
             async with OpenRouterClient() as c:
                 return await c.key_info()
         info = asyncio.run(key())
-        print({k: info.get(k) for k in ("label", "limit", "limit_remaining", "usage")})
+        print({k: info.get(k) for k in ("limit", "limit_remaining", "usage")})
     elif a.cmd == "run":
         cfg = RunConfig(budget_usd=a.budget, concurrency=a.concurrency, max_tokens=a.max_tokens)
         print(json.dumps(asyncio.run(run_one(a.model, a.dataset, a.method, cfg, a.limit)), indent=2))
