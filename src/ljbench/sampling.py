@@ -1,6 +1,7 @@
 """Length filtering and seeded, stratified, label-balanced sampling."""
 from __future__ import annotations
 
+import hashlib
 import math
 
 import pandas as pd
@@ -47,6 +48,35 @@ def stratified_balanced_sample(df: pd.DataFrame, n: int, strata_col: str | None,
         parts.append(g.sample(n=per_cell, random_state=seed))
     # final seeded shuffle so any prefix of the file is still roughly balanced
     return pd.concat(parts).sample(frac=1, random_state=seed).reset_index(drop=True)
+
+
+def _rank_key(item_id: str, seed: int) -> str:
+    return hashlib.sha256(f"{seed}|{item_id}".encode("utf-8")).hexdigest()
+
+
+def nested_subsample(df: pd.DataFrame, n: int, strata_col: str | None,
+                     label_col: str = "human_label", seed: int = config.SEED) -> pd.DataFrame:
+    """Balanced subset of n rows that is NESTED across sizes: the subset for n1 < n2 is always
+    contained in the subset for n2 (same seed). Each item gets a fixed pseudo-random rank inside its
+    (stratum x label) cell, and a subset takes the top n / n_cells of every cell.
+
+    So a study can be grown later by paying only for the new items. Deterministic and independent
+    of row order. Raises if n does not divide evenly or a cell is too small.
+    """
+    keys = [label_col] if strata_col is None else [strata_col, label_col]
+    groups = {k: g for k, g in df.groupby(keys, sort=True)}
+    if n % len(groups):
+        raise ValueError(f"n={n} is not divisible by {len(groups)} cells {list(groups)}")
+    per_cell = n // len(groups)
+    parts = []
+    for key, g in groups.items():
+        if len(g) < per_cell:
+            raise ValueError(f"cell {key} has {len(g)} rows, need {per_cell}")
+        ranked = g.assign(_r=g["id"].map(lambda i: _rank_key(i, seed))).sort_values("_r")
+        parts.append(ranked.head(per_cell))
+    out = pd.concat(parts)
+    out = out.assign(_r=out["id"].map(lambda i: _rank_key(i, seed + 1))).sort_values("_r")  # mix cells
+    return out.drop(columns="_r").reset_index(drop=True)
 
 
 def split_off(df: pd.DataFrame, n: int, seed: int = config.SEED):

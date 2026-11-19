@@ -114,6 +114,53 @@
         "livecodebench": 72,
         "mmlu-pro": 298
       }
+    },
+    "ragtruth_test_api240.jsonl": {
+      "rows": 240,
+      "sha256": "4a5f2015bede951e573131ff54733aed6a8107c1e9095560870b232155d919ae",
+      "labels": {
+        "SUPPORTED": 120,
+        "UNSUPPORTED": 120
+      },
+      "subsets": {
+        "Data2txt": 80,
+        "QA": 80,
+        "Summary": 80
+      }
+    },
+    "faithbench_api150.jsonl": {
+      "rows": 150,
+      "sha256": "859bfdcfb3b70ca1823c695dccf4f826d7a672cb13a3ab5e19f820ead18afeac",
+      "labels": {
+        "SUPPORTED": 75,
+        "UNSUPPORTED": 75
+      },
+      "subsets": {
+        "Anthropic/claude-3-5-sonnet-20240620": 13,
+        "Qwen/Qwen2.5-7B-Instruct": 19,
+        "cohere/command-r-08-2024": 13,
+        "google/gemini-1.5-flash-001": 19,
+        "meta-llama/Meta-Llama-3.1-70B-Instruct": 17,
+        "meta-llama/Meta-Llama-3.1-8B-Instruct": 18,
+        "microsoft/Phi-3-mini-4k-instruct": 8,
+        "mistralai/Mistral-7B-Instruct-v0.3": 16,
+        "openai/GPT-3.5-Turbo": 15,
+        "openai/gpt-4o": 12
+      }
+    },
+    "judgebench_eval_api240.jsonl": {
+      "rows": 240,
+      "sha256": "cdb4171e7cb08f2ed3fb517650e32fec7515cdd698a07858df31d884286e3c71",
+      "labels": {
+        "A": 120,
+        "B": 120
+      },
+      "subsets": {
+        "livebench-math": 32,
+        "livebench-reasoning": 49,
+        "livecodebench": 29,
+        "mmlu-pro": 130
+      }
     }
   }
 }

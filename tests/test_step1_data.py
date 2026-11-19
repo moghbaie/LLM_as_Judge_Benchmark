@@ -223,3 +223,32 @@ def test_all_within_length_budget(frozen_files):
     from ljbench.sampling import input_tokens
     for name, df in frozen_files.items():
         assert input_tokens(df).max() <= config.MAX_INPUT_TOKENS, name
+
+
+# ============================================================================ nested API subsets
+from ljbench.sampling import nested_subsample
+
+
+def test_nested_subsample_is_nested_balanced_and_order_invariant():
+    df = make_items(60)                                   # 2 subsets x 2 labels x 60
+    small = nested_subsample(df, 40, "subset")
+    big = nested_subsample(df, 120, "subset")
+    shuffled = nested_subsample(df.sample(frac=1, random_state=5), 40, "subset")
+    assert set(small["id"]) <= set(big["id"])             # nested: growing later reuses everything
+    assert (pd.crosstab(small["subset"], small["human_label"]) == 10).all().all()
+    assert list(small["id"]) == list(shuffled["id"])      # independent of input order
+    assert set(nested_subsample(df, 40, "subset", seed=2)["id"]) != set(small["id"])
+    with pytest.raises(ValueError, match="divisible"):
+        nested_subsample(df, 42, "subset")
+
+
+@frozen
+def test_api_subsets_are_balanced_nested_subsets_of_frozen_files(frozen_files):
+    for name, (parent, n, strata) in config.API_SUBSETS.items():
+        sub, par = frozen_files[f"{name}.jsonl"], frozen_files[f"{parent}.jsonl"]
+        assert len(sub) == n, name
+        assert set(sub["id"]) <= set(par["id"]), f"{name} is not inside {parent}"
+        cells = pd.crosstab(sub[strata], sub["human_label"]) if strata else sub["human_label"].value_counts()
+        assert (cells == cells.values.flat[0]).all().all(), f"{name} not balanced"
+        # rebuilding from the parent reproduces exactly the same file
+        assert list(nested_subsample(par, n, strata)["id"]) == list(sub["id"])

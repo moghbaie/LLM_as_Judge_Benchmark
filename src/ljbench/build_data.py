@@ -14,7 +14,7 @@ import pandas as pd
 
 from . import config, loaders
 from .io_utils import sha256, write_jsonl
-from .sampling import filter_by_length, input_tokens, split_off, stratified_balanced_sample
+from .sampling import filter_by_length, input_tokens, nested_subsample, split_off, stratified_balanced_sample
 from .schema import validate
 
 
@@ -92,6 +92,9 @@ def build_samples(items: dict[str, pd.DataFrame]) -> tuple[dict[str, pd.DataFram
     s["judgebench_dev_20"] = dev
     # shuffle with seed so any prefix of the file is a representative subset, like the others
     s[f"judgebench_eval_{len(ev)}"] = ev.sample(frac=1, random_state=config.SEED).reset_index(drop=True)
+    # nested API subsets of the frozen samples (see config.API_SUBSETS)
+    for name, (parent, n, strata) in config.API_SUBSETS.items():
+        s[name] = nested_subsample(s[parent], n, strata)
     for df in s.values():
         validate(df)
     return s, dropped

@@ -20,6 +20,7 @@ Checked against the real data on 2026-11-19:
 | 25 RAGTruth items have `quality` = `incorrect_refusal` / `truncated` | Drop them; they aren't ordinary faithfulness cases. |
 | FaithBench is **CC BY-NC-SA 4.0** (800 rows, 10 summarizer LLMs) | Fine for a non-commercial blog. Quotes need attribution and share-alike. Labels follow FaithBench's own "worst-label" binarization: Consistent/Benign → SUPPORTED, Unwanted → UNSUPPORTED, Questionable → dropped. |
 | FaithBench has only 238 non-hallucinated rows after dropping Questionable | Sample 250 as 125/125. That's feasible but uses ~half the SUPPORTED pool. |
+| API budget must stay under $40 (decided after the smoke test) | API models judge nested, balanced subsets (240 / 150 / 240); Colab models judge the full sets. See Budget plan. |
 | JudgeBench has **no train split** (620 pairs: gpt 350 + claude 270) | Hold out 20 pairs as a **dev** set for prompt debugging and evaluate on the other 600. Never look at the 600 before prompts are frozen. |
 | Pilot must not touch test data | The RAGTruth pilot (50) and the few-shot anchors for M3 (3) come from the **train** split. |
 | Metrics were scheduled after the full runs | Write and test the metrics code **before** the pilot, so the pilot is scored with the same code as the final run. |
@@ -71,23 +72,23 @@ n/p = not published. Only open models can go on the size curve; closed models ap
 - **Tier names checked against OpenRouter's model descriptions.** GPT-6.2 Astra is OpenAI's flagship, and GPT-6 Luna is its cost-efficient tier. **Gemini 4 Argon is Google's flagship.** Gemini 4 Neon is a mid-priced model.
 - **Licenses:** MiniCheck is CC BY-NC 4.0, and the Kimi, GLM, Muse Spark and Qwen 2.4T/Max licenses are "other". Fine for a non-commercial benchmark; check them before redistributing outputs.
 
-**API cost of the full run** (850 Task A items × 3 calls + 600 Task B pairs × 2 orders = 3,750 calls and 3.9M input tokens per model; specialists do Task A only):
+### Budget plan (decided 2026-11-19): API spend under $40
 
-| Model | Short output (300 tok/call) | Reasoning output (1,500 tok/call) |
+The smoke test (9 models × 20 JudgeBench dev pairs × 2 orders, $2.82) measured real output lengths. With those, the original design (8 API models on 600/250/600 items, M1 + M2, no thinking cap, pinned list prices) would cost **about $230**. To get under $40, these choices apply:
+
+| Decision | Effect | Trade-off |
 | --- | --- | --- |
-| Claude Opus 5.5 | $38 | $128 |
-| Kimi K3.1 Pro | $19 | $64 |
-| Qwen3.8 Max | $15 | $42 |
-| GLM-5.3 | $10 | $30 |
-| Muse Spark Open | $10 | $29 |
-| Gemini 3.8 Flash | $7 | $24 |
-| DeepSeek V4.1 Flash, GPT-6 Luna | $1 each | $3 each |
-| **Core API total (8 models)** | **≈ $101** | **≈ $323** |
-| Optional API models (7) | ≈ $191 | ≈ $632 |
+| **Smaller nested subsets for API models:** RAGTruth 240 (40 per task type × label), FaithBench 150 (75/75), JudgeBench 240 pairs (120/120) | Biggest saving | ±4.4–5.1 points per score instead of ±3.2–3.4. Subsets are nested in the frozen sets, so growing later only costs the new items. |
+| **Colab models still run the full 600 / 250 / 600** | Free (GPU time only) | Small-model analysis keeps full precision; cross-tier comparisons use the shared subset |
+| **Thinking budget capped at 1,024 tokens per call**, same for every model | ~40% saving; also likely fixes the GLM / Qwen / DeepSeek parse failures (outputs cut off mid-thought) | Models are tested with a fixed thinking budget, not as shipped; stated in the post |
+| **M2 (claim decomposition) on Colab models + DeepSeek V4.1 Flash only** | M2 is 2/3 of Task A calls | Method effect is measured on small/mid open models, with DeepSeek as the large data point |
+| **Batch / flex endpoints** where the provider and settings stay the same: Opus, GPT-6 Luna, Qwen Max, DeepSeek (batch); Gemini (AI Studio flex) | ~50% off those models | Results arrive over hours; the runner needs a batch mode |
+| **GLM-5.3 → `novita/fp8`, Kimi K3.1 Pro → `wafer/us` (mxfp4)**: same precision, cheaper hosts | GLM ~55% cheaper, Kimi input 8× cheaper | No longer first-party; each needs a ~$0.30 re-smoke test |
+| **Opus 5.5 and GPT-6 Luna billed to your own Anthropic / OpenAI keys** via OpenRouter BYOK | ~$6–8 moves off the OpenRouter budget | Small OpenRouter BYOK fee; the runner logs which key paid |
 
-- The 6 core Colab models cost GPU compute units only.
-- Two ways to cut API cost later: OpenRouter `:batch` variants (half price, asynchronous; the runner would need batch support) and OpenAI's `flex` endpoint (half price).
-- The Step 6 pilot measures real output length per model, which decides where between these bounds the run lands.
+**Estimated API cost:** about **$25 total** (range $23–28), of which **~$19 on OpenRouter** and ~$6–8 on your Anthropic/OpenAI accounts. By model: Kimi ~$8, Opus ~$6, Qwen Max ~$4.5, GLM ~$2.5, Muse ~$1.7, Gemini ~$1.4, DeepSeek ~$0.8, Luna ~$0.2. The Step 6 pilot re-measures before the full run.
+
+**Still to do:** re-pin GLM and Kimi in `models.py` after their re-smoke tests; add the thinking cap, batch mode and BYOK logging to the runner; raise the OpenRouter key limit only if the pilot says so ($50 currently).
 
 ## Repo layout
 
@@ -134,6 +135,7 @@ Unified item schema (one JSON object per line):
   - `faithbench_250.jsonl` (125/125)
   - `judgebench_eval_600.jsonl` + `judgebench_dev_20.jsonl`
   - `ragtruth_pilot_50.jsonl` + `ragtruth_fewshot_pool.jsonl` (from train)
+  - API-model subsets, nested in the frozen sets: `ragtruth_test_api240.jsonl`, `faithbench_api150.jsonl`, `judgebench_eval_api240.jsonl` (`config.API_SUBSETS`)
 - **Tests:** label mapping, filtering, exact cell counts, determinism and input-order invariance of sampling, no train/test or dev/eval overlap, hashes match the manifest.
 - **Gate:** all tests pass and the files are committed (or saved to Drive).
 
@@ -166,7 +168,9 @@ Unified item schema (one JSON object per line):
 - **Gate:** frontier parse failures < 5%, plus a cost estimate for the full run (tokens × price table).
 
 ### Step 7 — Full runs
-- 12 core LLM judges × {M1, M2} × (600 + 250) faithfulness items, plus 600 JudgeBench items × 2 orders. MiniCheck and HHEM run Task A only. Optional models follow if time and budget allow.
+- **Colab models** (Qwen3.5-4B, Gemma 4 E4B, gpt-oss-20b, Qwen3.8-27B): M1 + M2 on the full 600 + 250 faithfulness items and 600 JudgeBench pairs × 2 orders. MiniCheck and HHEM run Task A only.
+- **API models** (8): M1 on the API subsets (240 + 150 faithfulness items, 240 JudgeBench pairs × 2 orders), 1,024-token thinking cap; M2 for DeepSeek V4.1 Flash only. Budget under $40 (see Budget plan).
+- Optional models follow only if budget allows.
 - **Gate:** a completeness check shows every model × method × dataset cell has all IDs.
 
 ### Step 8 — Analysis

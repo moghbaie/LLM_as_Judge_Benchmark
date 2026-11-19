@@ -3,6 +3,8 @@
 Built by `python -m ljbench.build_data --out data` (see `manifest.json` for seed, pinned revisions and SHA-256 hashes).
 Do not edit these files by hand; `tests/test_step1_data.py` checks the hashes.
 
+`*_api*.jsonl` are balanced subsets judged by the API models (budget), nested inside the full frozen files: a larger subset always contains a smaller one (`sampling.nested_subsample`).
+
 ## Sources and licenses
 
 | File(s) | Source | License |
