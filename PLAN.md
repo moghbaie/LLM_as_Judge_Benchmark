@@ -25,6 +25,33 @@ Checked against the real data on 2026-11-19:
 | Metrics were scheduled after the full runs | Write and test the metrics code **before** the pilot, so the pilot is scored with the same code as the final run. |
 | Dataset versions drift | Pin HF dataset commits and the FaithBench git commit, and record them in `data/manifest.json` with file SHA-256 hashes. |
 
+## Judge models
+
+The registry lives in `src/ljbench/models.py` and is tested in `tests/test_models.py`. Each entry pins an exact, versioned backend ID (never a `~…-latest` alias) and its open-weights repo. Prices are from OpenRouter, checked 2026-11-19; re-check them on run day.
+
+| Tier | Model | Backend ID | Total params | $/1M in / out | Status |
+| --- | --- | --- | --- | --- | --- |
+| Large open | Kimi K3.1 Pro | `moonshotai/kimi-k3.1-pro` | 2.78T | 0.25 / 8.80 | core |
+| Large open | DeepSeek V4.1 Flash | `deepseek/deepseek-v4.1-flash` | 763B | 0.30 / 1.20 | core |
+| Large open | GLM-5.3 | `z-ai/glm-5.3` | 753B | 0.07 / 1.40 | core |
+| Large open | Muse Spark Open | `meta/muse-spark-open` | 816B (42B active) | 1.25 / 4.25 | core; HF weights gated, few providers |
+| Closed reference | Qwen3.8 Max | `qwen/qwen3.8-max-0902` | n/a (closed) | 2.00 / 6.00 | core; **never counted as open** |
+| Large open | Qwen3.8 2.4T-A95B | `qwen/qwen3.8-2.4t-a95b` | 2.4T (95B active) | 2.00 / 6.00 | optional (disabled): open Qwen flagship for a Qwen size curve |
+| Small / mid open, frontier, specialists | to be pinned in Steps 4–5 | | | | |
+
+Estimated cost of the core run per model (3,750 calls: 850 Task A items × 3 calls + 600 Task B pairs × 2 orders, ~1.3–1.6k input tokens per call):
+
+| Model | Short output (300 tok) | Reasoning output (1,500 tok) |
+| --- | --- | --- |
+| Kimi K3.1 Pro | $11 | $51 |
+| DeepSeek V4.1 Flash | $3 | $8 |
+| GLM-5.3 | $2 | $8 |
+| Muse Spark Open | $11 | $30 |
+| Qwen3.8 Max | $17 | $44 |
+| **These 5 together** | **≈ $44** | **≈ $142** |
+
+Output length dominates the cost, so the Step 6 pilot measures real output tokens per model and decides whether reasoning or thinking mode stays on. The same mode must be used for every item of a model. Five large judges is more than the original plan's single large-open slot. They're all API calls, so they cost money but no Colab time.
+
 ## Repo layout
 
 ```
@@ -32,6 +59,7 @@ PLAN.md                     this file
 requirements.txt
 src/ljbench/
   config.py                 seeds, sizes, pinned revisions
+  models.py                 judge model registry (IDs, tiers, params, prices)
   schema.py                 unified item schema + validator
   loaders.py                raw dataset -> unified schema (pure functions + fetchers)
   sampling.py               length filter, stratified balanced sampling, holdout
