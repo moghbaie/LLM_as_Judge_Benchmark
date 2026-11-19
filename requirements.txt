@@ -1,0 +1,6 @@
+# Step 1 (CPU). Later steps add: openai/httpx (API runner), vllm (GPU runner), matplotlib, scikit-learn.
+datasets>=2.19
+huggingface_hub>=0.23
+pandas>=2.0
+pyarrow>=14
+pytest>=8

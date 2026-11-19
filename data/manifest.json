@@ -1,0 +1,119 @@
+{
+  "created": "2026-11-19",
+  "seed": 20261118,
+  "max_input_tokens": 6000,
+  "chars_per_token": 3.5,
+  "sources": {
+    "ragtruth": {
+      "repo": "wandb/RAGTruth-processed",
+      "revision": "eb4f4b9d1b68eb7092d3e1a61c0cd82d9808737b",
+      "license": "MIT"
+    },
+    "faithbench": {
+      "url": "https://raw.githubusercontent.com/vectara/FaithBench/023b72b2996f448eed9d25c882ad130679796ec2/FaithBench.csv",
+      "commit": "023b72b2996f448eed9d25c882ad130679796ec2",
+      "license": "CC BY-NC-SA 4.0"
+    },
+    "judgebench": {
+      "repo": "ScalerLab/JudgeBench",
+      "revision": "57dd5e0b9817d07f05ec8f45a91b2ce1e310e308",
+      "license": "MIT"
+    }
+  },
+  "dropped": {
+    "ragtruth_test": 0,
+    "ragtruth_train": 0,
+    "faithbench": 0,
+    "judgebench": 0,
+    "ragtruth_train_context_overlap": 0
+  },
+  "files": {
+    "ragtruth_test_600.jsonl": {
+      "rows": 600,
+      "sha256": "caf938f25716ad901a223cdbba1e1d397f89eeac20d535d506976fd3d6cee714",
+      "labels": {
+        "SUPPORTED": 300,
+        "UNSUPPORTED": 300
+      },
+      "subsets": {
+        "Data2txt": 200,
+        "QA": 200,
+        "Summary": 200
+      }
+    },
+    "faithbench_250.jsonl": {
+      "rows": 250,
+      "sha256": "03be324a07a64cc0f16e855a34a19c052a492290f8052d4e4abf147b051b888a",
+      "labels": {
+        "SUPPORTED": 125,
+        "UNSUPPORTED": 125
+      },
+      "subsets": {
+        "Anthropic/claude-3-5-sonnet-20240620": 24,
+        "Qwen/Qwen2.5-7B-Instruct": 30,
+        "cohere/command-r-08-2024": 21,
+        "google/gemini-1.5-flash-001": 30,
+        "meta-llama/Meta-Llama-3.1-70B-Instruct": 26,
+        "meta-llama/Meta-Llama-3.1-8B-Instruct": 25,
+        "microsoft/Phi-3-mini-4k-instruct": 19,
+        "mistralai/Mistral-7B-Instruct-v0.3": 28,
+        "openai/GPT-3.5-Turbo": 26,
+        "openai/gpt-4o": 21
+      }
+    },
+    "ragtruth_pilot_50.jsonl": {
+      "rows": 50,
+      "sha256": "b0de52c5d47e42accfd16bce7630251f2ad0cd0be985bc3da02ef08bd437a173",
+      "labels": {
+        "SUPPORTED": 25,
+        "UNSUPPORTED": 25
+      },
+      "subsets": {
+        "Data2txt": 17,
+        "QA": 11,
+        "Summary": 22
+      }
+    },
+    "ragtruth_fewshot_pool.jsonl": {
+      "rows": 30,
+      "sha256": "fc9b6a71bacdda38874d4e29cc508961c8714730b6d253397b7fcb831dcdd5a2",
+      "labels": {
+        "SUPPORTED": 15,
+        "UNSUPPORTED": 15
+      },
+      "subsets": {
+        "Data2txt": 10,
+        "QA": 10,
+        "Summary": 10
+      }
+    },
+    "judgebench_dev_20.jsonl": {
+      "rows": 20,
+      "sha256": "4b1ffab0c6c6e768d3eb3d1c92abdf22669629d9c2257294d79e6977e99aab1e",
+      "labels": {
+        "A": 13,
+        "B": 7
+      },
+      "subsets": {
+        "livebench-math": 3,
+        "livebench-reasoning": 6,
+        "livecodebench": 1,
+        "mmlu-pro": 10
+      }
+    },
+    "judgebench_eval_600.jsonl": {
+      "rows": 600,
+      "sha256": "7337f071165c378c9d357fa3270f4053aeb2d74176016b2c8a28b497586150cc",
+      "labels": {
+        "A": 323,
+        "B": 277
+      },
+      "subsets": {
+        "livebench-math": 87,
+        "livebench-reasoning": 143,
+        "livecodebench": 72,
+        "mmlu-pro": 298
+      }
+    }
+  }
+}
