@@ -8,8 +8,8 @@ from ljbench.models import BACKENDS, MODELS, REGISTRY, TIERS, ModelSpec
 
 CORE = ["hhem-2.1-open", "minicheck-7b", "qwen3.5-4b", "gemma-4-e4b", "gpt-oss-20b", "qwen3.8-27b",
         "glm-5.3", "deepseek-v4.1-flash", "muse-spark-open", "kimi-k3.1-pro", "qwen3.8-max",
-        "claude-opus-5.5", "claude-haiku-5.5", "gpt-6-luna", "gemini-3.8-flash"]
-OPTIONAL = ["muse-glimmer-30b", "gemma-4-31b", "qwen3.8-2.4t", "claude-fable-5.2", "gpt-6.2-astra",
+        "claude-opus-5.5", "gpt-6-luna", "gemini-3.8-flash"]
+OPTIONAL = ["claude-haiku-5.5", "muse-glimmer-30b", "gemma-4-31b", "qwen3.8-2.4t", "claude-fable-5.2", "gpt-6.2-astra",
             "gemini-4-argon"]
 
 
@@ -82,4 +82,4 @@ def test_cost_without_price_raises():
 
 def test_roster_table():
     t = models.roster_table()
-    assert len(t) == 21 and (t["status"] == "core").sum() == 15
+    assert len(t) == 21 and (t["status"] == "core").sum() == 14

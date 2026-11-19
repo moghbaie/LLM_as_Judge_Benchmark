@@ -27,7 +27,7 @@ Checked against the real data on 2026-11-19:
 
 ## Judge models
 
-**21 models: 15 core + 6 optional.** All are pinned in `src/ljbench/models.py`; `tests/test_models.py` locks the roster.
+**21 models: 14 core + 7 optional.** Only one Claude model is in the core run (Opus 5.5; Haiku 5.5 moved to optional on 2026-11-19). All are pinned in `src/ljbench/models.py`; `tests/test_models.py` locks the roster.
 
 - API models are pinned to one OpenRouter endpoint with no fallbacks.
 - Colab models are pinned to a Hugging Face commit.
@@ -50,7 +50,7 @@ Checked against the real data on 2026-11-19:
 | 13 | Kimi K3.1 Pro | 2.78T | n/p | Large open | OpenRouter | `moonshotai/mxfp4` | 2.00 / 10.00 | core |
 | 14 | Qwen3.8 Max | undisclosed | — | Closed reference | OpenRouter | `alibaba` | 2.00 / 6.00 | core |
 | 15 | Claude Opus 5.5 | undisclosed | — | Frontier flagship | OpenRouter | `anthropic` | 4.00 / 20.00 | core |
-| 16 | Claude Haiku 5.5 | undisclosed | — | Frontier cheap | OpenRouter | `anthropic` | 0.10 / 0.50 | core |
+| 16 | Claude Haiku 5.5 | undisclosed | — | Frontier cheap | OpenRouter | `anthropic` | 0.10 / 0.50 | optional |
 | 17 | GPT-6 Luna | undisclosed | — | Frontier cheap | OpenRouter | `openai` | 0.10 / 0.50 | core |
 | 18 | Gemini 3.8 Flash | undisclosed | — | Frontier cheap | OpenRouter | `google-ai-studio` | 0.75 / 3.75 | core |
 | 19 | Claude Fable 5.2 | undisclosed | — | Frontier flagship | OpenRouter | `anthropic` | 8.00 / 40.00 | optional |
@@ -81,9 +81,9 @@ n/p = not published. Only open models can go on the size curve; closed models ap
 | GLM-5.3 | $10 | $30 |
 | Muse Spark Open | $10 | $29 |
 | Gemini 3.8 Flash | $7 | $24 |
-| DeepSeek V4.1 Flash, Claude Haiku 5.5, GPT-6 Luna | $1 each | $3 each |
-| **Core API total (9 models)** | **≈ $102** | **≈ $326** |
-| Optional API models (6) | ≈ $190 | ≈ $629 |
+| DeepSeek V4.1 Flash, GPT-6 Luna | $1 each | $3 each |
+| **Core API total (8 models)** | **≈ $101** | **≈ $323** |
+| Optional API models (7) | ≈ $191 | ≈ $632 |
 
 - The 6 core Colab models cost GPU compute units only.
 - Two ways to cut API cost later: OpenRouter `:batch` variants (half price, asynchronous; the runner would need batch support) and OpenAI's `flex` endpoint (half price).
@@ -161,12 +161,12 @@ Unified item schema (one JSON object per line):
 - **Tests:** a smoke run on 20 pilot items per model; result-file schema checks.
 
 ### Step 6 — Pilot and prompt freeze
-- 50 RAGTruth-train items + 20 JudgeBench-dev items × at least 4 models (Qwen3.5-4B, DeepSeek V4.1 Flash, Claude Haiku 5.5, Claude Opus 5.5). Every core API model also gets the 20-item dev smoke test to measure output length and cost.
+- 50 RAGTruth-train items + 20 JudgeBench-dev items × at least 4 models (Qwen3.5-4B, DeepSeek V4.1 Flash, GPT-6 Luna, Claude Opus 5.5). Every core API model also gets the 20-item dev smoke test to measure output length and cost.
 - Read 20 outputs by hand, fix prompts or parsing, then freeze (`git tag v1`).
 - **Gate:** frontier parse failures < 5%, plus a cost estimate for the full run (tokens × price table).
 
 ### Step 7 — Full runs
-- 13 core LLM judges × {M1, M2} × (600 + 250) faithfulness items, plus 600 JudgeBench items × 2 orders. MiniCheck and HHEM run Task A only. Optional models follow if time and budget allow.
+- 12 core LLM judges × {M1, M2} × (600 + 250) faithfulness items, plus 600 JudgeBench items × 2 orders. MiniCheck and HHEM run Task A only. Optional models follow if time and budget allow.
 - **Gate:** a completeness check shows every model × method × dataset cell has all IDs.
 
 ### Step 8 — Analysis

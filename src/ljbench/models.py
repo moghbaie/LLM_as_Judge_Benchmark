@@ -137,14 +137,15 @@ MODELS: list[ModelSpec] = [
               price_in=2.00, price_out=6.00, license="proprietary",
               provider="alibaba", quantization="unknown", family="qwen",
               notes="Closed weights (API only). Never counted as open in charts."),
-    # ================================================================ frontier (core: 1 flagship + 3 cheap)
+    # ================================================================ frontier (core: Opus 5.5 flagship + 2 cheap)
     ModelSpec("claude-opus-5.5", "Claude Opus 5.5", "frontier", "openrouter",
               "anthropic/claude-opus-5.5", None, price_in=4.00, price_out=20.00, license="proprietary",
               provider="anthropic", temperature_supported=False,
               notes="Anthropic flagship; cascade target."),
     ModelSpec("claude-haiku-5.5", "Claude Haiku 5.5", "frontier", "openrouter",
               "anthropic/claude-haiku-5.5", None, price_in=0.10, price_out=0.50, license="proprietary",
-              provider="anthropic", temperature_supported=False),
+              provider="anthropic", temperature_supported=False, enabled=False,
+              notes="Optional: only one Claude model in the core run (Opus 5.5, the cascade target)."),
     ModelSpec("gpt-6-luna", "GPT-6 Luna", "frontier", "openrouter",
               "openai/gpt-6-luna", None, price_in=0.10, price_out=0.50, license="proprietary",
               provider="openai", temperature_supported=False,
